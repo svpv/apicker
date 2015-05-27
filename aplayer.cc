@@ -2,6 +2,7 @@
 #include <cmath>
 #include <ao/ao.h>
 #include "aplayer.h"
+#include "hipass.h"
 
 class LibAO
 {
@@ -34,10 +35,11 @@ private:
     ao_sample_format m_fmt;
     ao_device *m_dev;
     void *m_buf;
+    HiPass m_hipass;
 };
 
 APlayer::Ctx::Ctx(int channels, int rate)
-    : m_buf(NULL)
+    : m_buf(NULL), m_hipass(channels, rate, 200)
 {
     m_fmt.bits = 16;
     m_fmt.channels = channels;
@@ -57,6 +59,7 @@ APlayer::Ctx::~Ctx()
 void APlayer::Ctx::play(short *data, size_t n)
 {
     size_t nc = m_fmt.channels;
+    m_hipass.hipass(data, n);
     ao_play(m_dev, (char *) data, n * 2 * nc);
 }
 
