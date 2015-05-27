@@ -128,7 +128,12 @@ void APlayer::process(short **data, size_t n)
 {
     size_t nc = channels();
     short *out = (short *) m_ctx->buf(n * 2 * nc);
+#if 1
+    HiPass h(nc, rate(), 200);
+    h.hipass(data, n, out);
+#else
     convert(data, out, n, nc);
+#endif
     m_ctx->play(out, n);
 }
 

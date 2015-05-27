@@ -229,6 +229,20 @@ public:
 	    hipassn(data, n, out);
 	}
     }
+
+    template<typename T>
+    void hipass(T **data, size_t n)
+    {
+	for (int j = 0; j < m_nc; j++)
+	    hipass1(data[j], n, j);
+    }
+
+    template<typename T, typename RetT>
+    void hipass(const T *const *data, size_t n, RetT *out)
+    {
+	for (int j = 0; j < m_nc; j++)
+	    hipass1(data[j], n, j, out, 1);
+    }
 };
 
 HiPass::HiPass(int nc, int srate, int hz)
@@ -241,17 +255,18 @@ HiPass::~HiPass()
     delete m_ctx;
 }
 
-void HiPass::hipass(short *data, size_t n)
-{
-    m_ctx->hipass(data, n);
-}
-
-void HiPass::hipass(const short *data, size_t n, short *out)
-{
-    m_ctx->hipass(data, n, out);
-}
-
-void HiPass::hipass(const short *data, size_t n, float *out)
-{
-    m_ctx->hipass(data, n, out);
-}
+// inplace
+void HiPass::hipass(short  *data, size_t n) { m_ctx->hipass(data, n); }
+void HiPass::hipass(float  *data, size_t n) { m_ctx->hipass(data, n); }
+void HiPass::hipass(short **data, size_t n) { m_ctx->hipass(data, n); }
+void HiPass::hipass(float **data, size_t n) { m_ctx->hipass(data, n); }
+// interleaved
+void HiPass::hipass(const short *data, size_t n, short *out) { m_ctx->hipass(data, n, out); }
+void HiPass::hipass(const short *data, size_t n, float *out) { m_ctx->hipass(data, n, out); }
+void HiPass::hipass(const float *data, size_t n, short *out) { m_ctx->hipass(data, n, out); }
+void HiPass::hipass(const float *data, size_t n, float *out) { m_ctx->hipass(data, n, out); }
+// planar
+void HiPass::hipass(const short *const *data, size_t n, short *out) { m_ctx->hipass(data, n, out); }
+void HiPass::hipass(const short *const *data, size_t n, float *out) { m_ctx->hipass(data, n, out); }
+void HiPass::hipass(const float *const *data, size_t n, short *out) { m_ctx->hipass(data, n, out); }
+void HiPass::hipass(const float *const *data, size_t n, float *out) { m_ctx->hipass(data, n, out); }

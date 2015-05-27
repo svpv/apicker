@@ -26,6 +26,13 @@ namespace Sample
 	(void) ArgRange; (void) RetRange;
 	return sample / 32767.0f;
     }
+
+    static inline
+    float resample(float sample, const float *ArgRange, const short *RetRange)
+    {
+	(void) ArgRange; (void) RetRange;
+	return rint(sample * 32767.0f);
+    }
 }
 
 #endif
