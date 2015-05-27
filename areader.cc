@@ -21,8 +21,6 @@ public:
     Ctx(const char *filename);
     ~Ctx();
     size_t read(void **datap);
-    short *convert(float *data, size_t n);
-    float *planar(float **data, size_t n);
     enum AVSampleFormat fmt()
     {
 	return m_coctx->sample_fmt;
@@ -70,9 +68,6 @@ AReader::Ctx::Ctx(const char *fname)
     if (m_codec == NULL)
 	throw "cannot find audio decoder";
 
-    if (m_coctx->sample_fmt == AV_SAMPLE_FMT_S16P)
-	m_coctx->request_sample_fmt = AV_SAMPLE_FMT_S16;
-
     if (avcodec_open2(m_coctx, m_codec, NULL) < 0)
 	throw "cannot open audio decoder";
 
@@ -96,33 +91,6 @@ size_t AReader::Ctx::read(void **datap)
 	}
     }
     return 0;
-}
-
-short *AReader::Ctx::convert(float *data, size_t n)
-{
-    size_t c = channels();
-    short *out = m_buf1 = (short *) realloc(m_buf1, n * 2 * c);
-    float *end = data + n * c;
-    while (data < end) {
-	float f = *data++;
-	if (f >= 1.0f)
-	    *out++ =  32767;
-	else if (f <= -1.0f)
-	    *out++ = -32767;
-	else
-	    *out++ = rintf(f * 32767);
-    }
-    return m_buf1;
-}
-
-float *AReader::Ctx::planar(float **data, size_t n)
-{
-    size_t c = channels();
-    float *out = m_buf2 = (float *) realloc(m_buf2, n * 4 * c);
-    for (size_t i = 0; i < n; i++)
-    for (size_t j = 0; j < c; j++)
-	*out++ = data[j][i];
-    return m_buf2;
 }
 
 AReader::Ctx::~Ctx()
@@ -151,14 +119,9 @@ int AReader::rate()
     return m_ctx->rate();
 }
 
-short *AReader::convert(float *data, size_t n)
-{
-    return m_ctx->convert(data, n);
-}
-
 int AReader::readsome()
 {
-    void *data, *p;
+    void *data;
     size_t n = m_ctx->read(&data);
     if (n == 0)
 	return 100;
@@ -166,14 +129,14 @@ int AReader::readsome()
     case AV_SAMPLE_FMT_S16:
 	process(*(short **) data, n);
 	break;
-    case AV_SAMPLE_FMT_FLTP:
-	if (channels() > 1) {
-	    p = m_ctx->planar((float **) data, n);
-	    data = &p;
-	}
-	/* fall through */
+    case AV_SAMPLE_FMT_S16P:
+	process( (short **) data, n);
+	break;
     case AV_SAMPLE_FMT_FLT:
 	process(*(float **) data, n);
+	break;
+    case AV_SAMPLE_FMT_FLTP:
+	process( (float **) data, n);
 	break;
     default:
 	throw "unsupported audio sample format";

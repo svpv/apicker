@@ -11,21 +11,25 @@ public:
     }
 private:
     template<typename T>
-    inline double chsum(T *data, size_t i, size_t nc)
+    inline double chsum(T  *data, size_t i, size_t nc)
     {
 	double s = data[i * nc];
 	for (size_t j = 1; j < nc; j++)
 	    s += data[i * nc + j];
 	return s;
     }
-    inline double avg(short *data, size_t i, size_t nc)
+    template<typename T>
+    inline double chsum(T **data, size_t i, size_t nc)
     {
-	return chsum(data, i, nc) / (nc * 32767);
+	double s = data[0][i];
+	for (size_t j = 1; j < nc; j++)
+	    s += data[j][i];
+	return s;
     }
-    inline double avg(float *data, size_t i, size_t nc)
-    {
-	return chsum(data, i, nc) / nc;
-    }
+    inline double avg(short  *data, size_t i, size_t nc) { return chsum(data, i, nc) / (nc * 32767); }
+    inline double avg(short **data, size_t i, size_t nc) { return chsum(data, i, nc) / (nc * 32767); }
+    inline double avg(float  *data, size_t i, size_t nc) { return chsum(data, i, nc) / nc; }
+    inline double avg(float **data, size_t i, size_t nc) { return chsum(data, i, nc) / nc; }
 
     double m_sum;
     size_t m_nsum;
@@ -69,6 +73,8 @@ private:
 	}
     }
 protected:
-    void process(short *data, size_t n) override { do_process(data, n); }
-    void process(float *data, size_t n) override { do_process(data, n); }
+    void process(short  *data, size_t n) override { do_process(data, n); }
+    void process(short **data, size_t n) override { do_process(data, n); }
+    void process(float  *data, size_t n) override { do_process(data, n); }
+    void process(float **data, size_t n) override { do_process(data, n); }
 };

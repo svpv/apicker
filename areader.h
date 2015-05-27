@@ -11,9 +11,10 @@ public:
     int rate();
     int channels();
 protected:
-    virtual void process(short *data, size_t n) = 0; // s16
-    virtual void process(float *data, size_t n) = 0; // flt
-    short *convert(float *data, size_t n); // flt -> s16
+    virtual void process(short  *data, size_t n) = 0; // s16
+    virtual void process(short **data, size_t n) = 0; // s16p
+    virtual void process(float  *data, size_t n) = 0; // flt
+    virtual void process(float **data, size_t n) = 0; // fltp
 private:
     class Ctx;
     Ctx *m_ctx;
