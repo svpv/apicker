@@ -19,7 +19,7 @@ public:
 	memset(m_y, 0, sizeof(m_y));
     }
 private:
-    int m_nc;
+    size_t m_nc;
     float m_a;
     float m_x[8];
     float m_y[8];
@@ -203,6 +203,8 @@ public:
     {
 	switch (m_nc)
 	{
+	case 0:
+	    // cannot happen, fall through
 	case 1:
 	    hipass1(data, n, 0);
 	    break;
@@ -219,6 +221,8 @@ public:
     {
 	switch (m_nc)
 	{
+	case 0:
+	    // cannot happen, fall through
 	case 1:
 	    hipass1(data, n, 0, out, 1);
 	    break;
@@ -233,14 +237,14 @@ public:
     template<typename T>
     void hipass(T **data, size_t n)
     {
-	for (int j = 0; j < m_nc; j++)
+	for (size_t j = 0; j < m_nc; j++)
 	    hipass1(data[j], n, j);
     }
 
     template<typename T, typename RetT>
     void hipass(const T *const *data, size_t n, RetT *out)
     {
-	for (int j = 0; j < m_nc; j++)
+	for (size_t j = 0; j < m_nc; j++)
 	    hipass1(data[j], n, j, out, 1);
     }
 };
