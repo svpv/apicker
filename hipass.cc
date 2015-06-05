@@ -11,7 +11,7 @@ public:
     Ctx(int nc, int srate, int hz)
 	: m_nc(nc), m_once(false)
     {
-	if (nc >= 8)
+	if (nc > 8)
 	    throw "two many audio channels";
 	double RC = 1 / (2 * M_PI * hz);
 	m_a = RC / (RC + 1.0 / srate);
