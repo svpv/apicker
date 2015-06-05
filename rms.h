@@ -44,7 +44,6 @@ private:
 	    return;
 
 	double rms = sqrt(m_sum / m_nmax);
-	printf("%f\n", rms);
 	m_rms.push_back(rms);
 	m_sum = 0;
 	m_nsum = 0;
@@ -77,4 +76,9 @@ protected:
     void process(short **data, size_t n) override { do_process(data, n); }
     void process(float  *data, size_t n) override { do_process(data, n); }
     void process(float **data, size_t n) override { do_process(data, n); }
+public:
+    std::vector<double> &rms()
+    {
+	return m_rms;
+    }
 };
