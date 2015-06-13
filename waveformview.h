@@ -8,7 +8,8 @@
 class WaveformView : public Gtk::DrawingArea
 {
 public:
-    WaveformView(Waveform *wf) : m_wf(wf)
+    WaveformView(Waveform *wf) :
+	m_wf(wf), m_ix0(0)
     {
 	set_size_request(1200, 280);
     }
@@ -49,13 +50,19 @@ public:
 
 	cr->move_to(0, h);
 	for (size_t i = 0; i < w; i++)
-	    cr->line_to(i, h - m_wf->m_v[i]);
+	    cr->line_to(i, h - m_wf->m_v[i + m_ix0]);
 	cr->line_to(w, h);
 	cr->fill();
     }
 
+    void newix0(size_t ix0)
+    {
+	m_ix0 = ix0;
+	queue_draw();
+    }
+protected:
     Waveform *m_wf;
-    sigc::signal<int> scrolling;
+    size_t m_ix0;
 };
 
 #endif

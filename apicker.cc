@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
 
     WaveformView wv(&wf);
     OverviewBar ob(&wf);
+    ob.sigix0.connect(sigc::mem_fun(wv, &WaveformView::newix0));
 
     Gtk::VBox vb(false, 1);
     vb.pack_start(wv);

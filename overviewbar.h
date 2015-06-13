@@ -9,7 +9,7 @@ public:
     OverviewBar(Waveform *wf) :
 	m_wf(wf),
 	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
-	m_ix(0), m_x0(0), m_w0(0),
+	m_ix0(0), m_x0(0), m_w0(0),
 	m_drag(false)
     {
 	set_size_request(1200, 48);
@@ -20,6 +20,7 @@ public:
     {
 	free(m_avg);
     }
+    sigc::signal<void, size_t> sigix0;
 protected:
     void setx0(double x)
     {
@@ -27,10 +28,11 @@ protected:
 	    x = 0;
 	const size_t w = get_width();
 	const size_t max_ix = m_wf->m_n - w;
-	m_ix = x * m_wf->m_n / get_width();
-	if (m_ix > max_ix)
-	    m_ix = max_ix;
-	m_x0 = m_ix * w / (double) m_wf->m_n;
+	m_ix0 = x * m_wf->m_n / get_width();
+	if (m_ix0 > max_ix)
+	    m_ix0 = max_ix;
+	sigix0.emit(m_ix0);
+	m_x0 = m_ix0 * w / (double) m_wf->m_n;
 	m_w0 = w * w / (double) m_wf->m_n;
     }
 
@@ -42,7 +44,7 @@ protected:
 	if (m_w0 == 0)
 	    setx0(0);
 	else {
-	    m_x0 = m_ix * w / (double) m_wf->m_n;
+	    m_x0 = m_ix0 * w / (double) m_wf->m_n;
 	    m_w0 = w * w / (double) m_wf->m_n;
 	}
 
@@ -130,7 +132,7 @@ private:
     double *m_avg;
     size_t m_avgcnt;
     double m_avgmax;
-    size_t m_ix;
+    size_t m_ix0;
     double m_x0;
     double m_w0;
     bool m_drag;
