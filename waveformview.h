@@ -38,11 +38,12 @@ public:
 	Cairo::TextExtents extents;
 	cr->get_text_extents("0:00:00", extents);
 
-	for (size_t i = 0; i < w; i += 100) {
+	size_t rem = m_ix0 % 100;
+	for (size_t i = rem ? 100 - rem : 0; i < w; i += 100) {
 	    cr->move_to(i, h - 256);
 	    cr->line_to(i, h - 256 - 3);
 	    cr->move_to(i - extents.width / 2, h - 256 - extents.height / 2 - 4);
-	    CSec t(i);
+	    CSec t(i + m_ix0);
 	    cr->show_text(t.strsec());
 	}
 
