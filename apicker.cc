@@ -11,9 +11,8 @@ int main(int argc, char *argv[])
     Glib::RefPtr<Gtk::Adjustment> aj(Gtk::Adjustment::create(0, 0, wf.m_n));
     Gtk::Scrollbar sb(aj);
 
-    WaveformView wv(&wf);
-    OverviewBar ob(&wf);
-    ob.sigix0.connect(sigc::mem_fun(wv, &WaveformView::newix0));
+    WaveformView wv(&wf, aj);
+    OverviewBar ob(&wf, aj);
 
     Gtk::VBox vb(false, 1);
     vb.pack_start(wv);
