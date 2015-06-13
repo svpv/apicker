@@ -2,15 +2,18 @@
 #define OVERVIEWBAR_H
 
 #include "waveform.h"
+#include "cursor.h"
 
 class OverviewBar : public Gtk::DrawingArea
 {
 public:
-    OverviewBar(Waveform *wf)
-	: m_wf(wf), m_avg(NULL), m_avgcnt(0), m_ix(0)
+    OverviewBar(Waveform *wf) :
+	m_wf(wf),
+	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
+	m_ix(0), m_x0(0), m_w0(0)
     {
 	set_size_request(1200, 48);
-	add_events(Gdk::BUTTON_PRESS_MASK);
+	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
     }
 
     ~OverviewBar()
@@ -30,8 +33,8 @@ protected:
 
     void draw_bg(const Cairo::RefPtr<Cairo::Context> &cr, const size_t w, const size_t h)
     {
-	double x0 = m_ix * w / (double) m_wf->m_n;
-	double smallw = w * w / (double) m_wf->m_n;
+	m_x0 = m_ix * w / (double) m_wf->m_n;
+	m_w0 = w * w / (double) m_wf->m_n;
 
 	cr->save();
 
@@ -40,7 +43,7 @@ protected:
 	cr->fill();
 
 	cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
-	cr->rectangle(x0, 0, smallw, h);
+	cr->rectangle(m_x0, 0, m_w0, h);
 	cr->fill();
 
 	cr->restore();
@@ -90,12 +93,27 @@ protected:
 	queue_draw();
 	return true;
     }
+
+    bool on_motion_notify_event(GdkEventMotion* event) override
+    {
+	GdkWindow *w = get_window()->gobj();
+	if (event->x < m_x0 || event->x > m_x0 + m_w0)
+	    gdk_window_set_cursor(w, NULL);
+	else {
+	    GdkCursor *c = cursor_get(CURSOR_HAND_OPEN);
+	    gdk_window_set_cursor(w, c);
+	    gdk_cursor_unref(c);
+	}
+	return true;
+    }
 private:
     Waveform *m_wf;
     double *m_avg;
     size_t m_avgcnt;
     double m_avgmax;
     size_t m_ix;
+    double m_x0;
+    double m_w0;
 };
 
 #endif
