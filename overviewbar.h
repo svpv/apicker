@@ -2,7 +2,6 @@
 #define OVERVIEWBAR_H
 
 #include "waveform.h"
-#include "cursor.h"
 
 class OverviewBar : public Gtk::DrawingArea
 {
@@ -10,7 +9,8 @@ public:
     OverviewBar(Waveform *wf) :
 	m_wf(wf),
 	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
-	m_ix(0), m_x0(0), m_w0(0)
+	m_ix(0), m_x0(0), m_w0(0),
+	m_drag(false)
     {
 	set_size_request(1200, 48);
 	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
@@ -21,10 +21,30 @@ public:
 	free(m_avg);
     }
 protected:
+    void setx0(double x)
+    {
+	if (x < 0)
+	    x = 0;
+	const size_t w = get_width();
+	const size_t max_ix = m_wf->m_n - w;
+	m_ix = x * m_wf->m_n / get_width();
+	if (m_ix > max_ix)
+	    m_ix = max_ix;
+	m_x0 = m_ix * w / (double) m_wf->m_n;
+	m_w0 = w * w / (double) m_wf->m_n;
+    }
+
     bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
     {
 	const size_t w = get_width();
 	const size_t h = get_height();
+
+	if (m_w0 == 0)
+	    setx0(0);
+	else {
+	    m_x0 = m_ix * w / (double) m_wf->m_n;
+	    m_w0 = w * w / (double) m_wf->m_n;
+	}
 
 	draw_bg(cr, w, h);
 	draw_wf(cr, w, h);
@@ -33,9 +53,6 @@ protected:
 
     void draw_bg(const Cairo::RefPtr<Cairo::Context> &cr, const size_t w, const size_t h)
     {
-	m_x0 = m_ix * w / (double) m_wf->m_n;
-	m_w0 = w * w / (double) m_wf->m_n;
-
 	cr->save();
 
 	cr->set_source_rgba(0.5, 0.5, 0.5, 1.0);
@@ -88,21 +105,23 @@ protected:
 
     bool on_button_press_event(GdkEventButton *event) override
     {
-	double x = event->x;
-	m_ix = x / get_width() * m_wf->m_n;
+	setx0(event->x);
 	queue_draw();
+	m_drag = true;
+	return true;
+    }
+
+    bool on_button_release_event(GdkEventButton *event) override
+    {
+	m_drag = false;
 	return true;
     }
 
     bool on_motion_notify_event(GdkEventMotion* event) override
     {
-	GdkWindow *w = get_window()->gobj();
-	if (event->x < m_x0 || event->x > m_x0 + m_w0)
-	    gdk_window_set_cursor(w, NULL);
-	else {
-	    GdkCursor *c = cursor_get(CURSOR_HAND_OPEN);
-	    gdk_window_set_cursor(w, c);
-	    gdk_cursor_unref(c);
+	if (m_drag) {
+	    setx0(event->x);
+	    queue_draw();
 	}
 	return true;
     }
@@ -114,6 +133,7 @@ private:
     size_t m_ix;
     double m_x0;
     double m_w0;
+    bool m_drag;
 };
 
 #endif
