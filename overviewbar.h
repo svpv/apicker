@@ -98,8 +98,8 @@ protected:
 	cr->move_to(0, h);
 
 	for (size_t i = 0; i < w; i++) {
-	    cr->line_to(i + 0.25, h / m_avgmax * m_avg[2 * i]);
-	    cr->line_to(i + 0.75, h / m_avgmax * m_avg[2 * i + 1]);
+	    cr->line_to(i + 0.25, h - h / m_avgmax * m_avg[2 * i]);
+	    cr->line_to(i + 0.75, h - h / m_avgmax * m_avg[2 * i + 1]);
 	}
 	cr->line_to(w, h);
 	cr->fill();
