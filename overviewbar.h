@@ -7,7 +7,7 @@ class OverviewBar : public Gtk::DrawingArea
 {
 public:
     OverviewBar(Waveform *wf)
-	: m_wf(wf), m_avg(NULL), m_ix(0)
+	: m_wf(wf), m_avg(NULL), m_avgcnt(0), m_ix(0)
     {
 	set_size_request(1200, 48);
 	add_events(Gdk::BUTTON_PRESS_MASK);
@@ -46,12 +46,13 @@ protected:
 	cr->restore();
     }
 
-    void draw_wf(const Cairo::RefPtr<Cairo::Context> &cr, const size_t w, const size_t h)
+    void mk_avg(const size_t w)
     {
 	const double imul2 = m_wf->m_n / (2.0 * w);
 	m_avg = (double *) realloc(m_avg, 2 * w * sizeof(double));
+	m_avgcnt = 2 * w;
 
-	double max = 0;
+	m_avgmax = 0;
 	size_t j = 0;
 	for (size_t i = 0; i < 2 * w; i++) {
 	    size_t nj = imul2 * (i + 0.5);
@@ -61,16 +62,22 @@ protected:
 		sj += m_wf->m_v[j++];
 	    if (dj)
 		sj /= dj;
-	    if (sj > max)
-		max = sj;
+	    if (sj > m_avgmax)
+		m_avgmax = sj;
 	    m_avg[i] = sj;
 	}
+    }
+
+    void draw_wf(const Cairo::RefPtr<Cairo::Context> &cr, const size_t w, const size_t h)
+    {
+	if (m_avgcnt != 2 * w)
+	    mk_avg(w);
 
 	cr->move_to(0, h);
 
 	for (size_t i = 0; i < w; i++) {
-	    cr->line_to(i + 0.25, h / max * m_avg[2 * i]);
-	    cr->line_to(i + 0.75, h / max * m_avg[2 * i + 1]);
+	    cr->line_to(i + 0.25, h / m_avgmax * m_avg[2 * i]);
+	    cr->line_to(i + 0.75, h / m_avgmax * m_avg[2 * i + 1]);
 	}
 	cr->line_to(w, h);
 	cr->fill();
@@ -86,6 +93,8 @@ protected:
 private:
     Waveform *m_wf;
     double *m_avg;
+    size_t m_avgcnt;
+    double m_avgmax;
     size_t m_ix;
 };
 
