@@ -30,11 +30,19 @@ int main(int argc, char *argv[])
     vb.pack_start(ob);
     vb.pack_start(sb);
 
+    Gtk::Button bp("Play", true);
+    Gtk::Button bs("Stop", true);
+    bp.signal_clicked().connect(sigc::mem_fun(ap, &APlayer::play_bga));
+    bs.signal_clicked().connect(sigc::mem_fun(ap, &APlayer::stop_bg));
+
+    Gtk::HBox hb(false, 1);
+    hb.pack_start(bp);
+    hb.pack_start(bs);
+    vb.pack_start(hb);
+
     Gtk::Window win;
     win.add(vb);
     win.show_all();
-
-    ap.play_bg(0);
     app.run(win);
     return 0;
 }
