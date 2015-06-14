@@ -34,8 +34,10 @@ int main(int argc, char *argv[])
 
     Gtk::Button bp("Play", true);
     Gtk::Button bs("Stop", true);
-    bp.signal_clicked().connect(sigc::mem_fun(ap, &APlayer::play_bga));
-    bs.signal_clicked().connect(sigc::mem_fun(ap, &APlayer::stop_bg));
+    bp.signal_clicked().connect(
+	    [&ap, &aj]() { ap.play_bg(aj->get_value()); });
+    bs.signal_clicked().connect(
+	    sigc::mem_fun(ap, &APlayer::stop_bg));
 
     Gtk::HBox hb(false, 1);
     hb.pack_start(bp);

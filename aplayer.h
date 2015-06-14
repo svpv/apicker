@@ -6,10 +6,6 @@ public:
     APlayer(const char *fname);
     ~APlayer();
     void play_bg(unsigned csec);
-    void play_bga()
-    {
-	play_bg(getpos());
-    }
     void stop_bg();
     sigc::signal<void, unsigned> sig_bg_pos;
 protected:
