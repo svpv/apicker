@@ -9,6 +9,7 @@ public:
     OverviewBar(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> m_aj) :
 	m_wf(wf), m_aj(m_aj),
 	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
+	m_x1_centered(0), m_x1_current(0), m_x1_clicked(-9),
 	m_drag(false)
     {
 	set_size_request(1200, 48);
@@ -51,6 +52,24 @@ protected:
 	    ai -= lack;
 	    x1 += lack / 2;
 	}
+
+	m_x1_centered = x1;
+
+	// we have a click?
+	if (m_x1_clicked > -9) {
+	    x1 = m_x1_clicked;
+	    if (ix0 / 16 < x1)
+		x1 = ix0 / 16;
+	    ai = ix0 / 8 - x1 * 2;
+	    lack = ai + w * 2 - m_avgcnt;
+	    if (lack > 0) {
+		ai -= lack;
+		x1 += lack / 2;
+	    }
+	    m_x1_clicked = x1;
+	}
+
+	m_x1_current = x1;
 
 	draw_bg(cr, w, h, x1, w1);
 	draw_wf(cr, w, h, ai);
@@ -111,32 +130,18 @@ protected:
 
     void click(double x)
     {
-	size_t w = get_width();
-	double w1 = w / 16;
-
+	const size_t w = get_width();
 	m_aj->set_page_size(w);
 	double ix0 = m_aj->get_value();
-
-	double x1 = w / 2 - w1 / 2;
-
-	if (ix0 / 16 < x1)
-	    x1 = ix0 / 16;
-
-	size_t ai = ix0 / 8 - x1 * 2;
-	ssize_t lack = ai + w * 2 - m_avgcnt;
-	if (lack > 0) {
-	    ai -= lack;
-	    x1 += lack / 2;
-	}
-
-	ix0 += (x - x1) * 16;
-
-	m_aj->set_value(ix0);
+	m_x1_clicked = x;
+	m_aj->set_value(ix0 + (x - m_x1_current) * 16);
 	queue_draw();
     }
 
     bool on_button_press_event(GdkEventButton *event) override
     {
+	if (m_tick)
+	    m_tick.block();
 	click(event->x);
 	m_drag = true;
 	return true;
@@ -145,6 +150,11 @@ protected:
     bool on_button_release_event(GdkEventButton *event) override
     {
 	m_drag = false;
+	if (m_tick)
+	    m_tick.unblock();
+	else
+	    m_tick = Glib::signal_timeout().connect(
+		    sigc::mem_fun(*this, &OverviewBar::tick), 10);
 	return true;
     }
 
@@ -154,12 +164,35 @@ protected:
 	    click(event->x);
 	return true;
     }
+
+    bool tick()
+    {
+	double diff = m_x1_current - m_x1_centered;
+	if (fabs(diff) < 5) {
+	    m_x1_clicked = -9;
+	    m_tick.block();
+	    goto out;
+	}
+	if (diff > 0)
+	    diff -= 4;
+	else
+	    diff += 4;
+	diff *= 0.99;
+	m_x1_clicked = m_x1_centered + diff;
+    out:
+	queue_draw();
+	return true;
+    }
 private:
     Waveform *m_wf;
     Glib::RefPtr<Gtk::Adjustment> m_aj;
     double *m_avg;
     size_t m_avgcnt;
     double m_avgmax;
+    double m_x1_centered;
+    double m_x1_current;
+    double m_x1_clicked;
+    sigc::connection m_tick;
     bool m_drag;
 };
 
