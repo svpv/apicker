@@ -12,7 +12,7 @@ all: $(PROG)
 
 areader.o: areader.h
 areader.o: CXXFLAGS += $(AV_CFLAGS)
-aplayer.o: aplayer.h areader.h hipass.h
+aplayer.o: aplayer.h areader.h
 aplayer.o: CXXFLAGS += $(AO_CFLAGS)
 aplayer: aplayer.o areader.o hipass.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(AV_LIBS) $(AO_LIBS)
