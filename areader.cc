@@ -83,8 +83,12 @@ size_t AReader::Ctx::read(void **datap)
 	    continue;
 	int finished = 0;
 	int len = avcodec_decode_audio4(m_coctx, m_frame, &finished, &m_packet);
-	if (len < 0)
-	    throw "cannot decode audio";
+	if (len < 0) {
+	    if (m_codec->id == AV_CODEC_ID_MP3)
+		return 0; /* probably id3sync issues at eof */
+	    else
+		throw "cannot decode audio";
+	}
 	if (finished) {
 	    *datap = m_frame->extended_data;
 	    return m_frame->nb_samples;
