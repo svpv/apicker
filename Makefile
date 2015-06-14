@@ -7,15 +7,13 @@ AO_LIBS = `pkg-config --libs ao`
 GTKMM_CFLAGS = `pkg-config --cflags gtkmm-3.0`
 GTKMM_LIBS = `pkg-config --libs gtkmm-3.0`
 
-PROG = aplayer mkwf apicker
+PROG = mkwf apicker
 all: $(PROG)
 
 areader.o: areader.h
 areader.o: CXXFLAGS += $(AV_CFLAGS)
 aplayer.o: aplayer.h areader.h
 aplayer.o: CXXFLAGS += $(AO_CFLAGS)
-aplayer: aplayer.o areader.o hipass.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(AV_LIBS) $(AO_LIBS)
 
 hipass.o: hipass.h sample.h
 mkwf.o: waveformgen.h rms.h hipass.h
@@ -27,5 +25,5 @@ cursor.o: CXXFLAGS += $(GTKMM_CFLAGS)
 
 apicker.o: waveform.h waveformview.h overviewbar.h csec.h
 apicker.o: CXXFLAGS += $(GTKMM_CFLAGS)
-apicker: apicker.o waveform.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(AV_LIBS) $(GTKMM_LIBS)
+apicker: apicker.o waveform.o aplayer.o areader.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(AV_LIBS) $(GTKMM_LIBS) $(AO_LIBS) -lpthread

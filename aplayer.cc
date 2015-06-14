@@ -30,6 +30,8 @@ public:
 	m_buf = realloc(m_buf, size);
 	return m_buf;
     }
+    volatile bool m_stop;
+    unsigned m_csec;
 private:
     int m_driver;
     ao_sample_format m_fmt;
@@ -70,6 +72,36 @@ APlayer::APlayer(const char *fname)
 APlayer::~APlayer()
 {
     delete m_ctx;
+}
+
+static void *bg_play_routine(void *arg)
+{
+    APlayer *ap = (APlayer *) arg;
+    ap->seek(ap->m_ctx->m_csec);
+    int percent;
+    do
+	percent = ap->readsome();
+    while (percent < 100 && !ap->m_ctx->m_stop);
+    return NULL;
+}
+
+void start_bg_thread(APlayer *ap)
+{
+    pthread_t bg_thread;
+    if (pthread_create(&bg_thread, NULL, bg_play_routine, ap) != 0)
+	throw "cannot create player thread";
+}
+
+void APlayer::play_bg(unsigned csec)
+{
+    m_ctx->m_stop = false;
+    m_ctx->m_csec = csec;
+    start_bg_thread(this);
+}
+
+void APlayer::stop_bg()
+{
+    m_ctx->m_stop = true;
 }
 
 static inline float f2s(float f)
@@ -144,28 +176,4 @@ void APlayer::process(float **data, size_t n)
     short *out = (short *) m_ctx->buf(n * 2 * nc);
     convert(data, out, n, nc);
     m_ctx->play(out, n);
-}
-
-int main(int argc, char *argv[])
-{
-    try {
-	unsigned csec = 0;
-	if (argv[1] && strcmp(argv[1], "-seek") == 0) {
-	    csec = atoi(argv[2]);
-	    argv += 2;
-	}
-	APlayer player(argv[1]);
-	if (csec)
-	    player.seek(csec);
-	player.loop();
-    }
-    catch (const std::exception &e) {
-	std::cerr << e.what() << std::endl;
-	return 1;
-    }
-    catch (const char *s) {
-	std::cerr << s << std::endl;
-	return 1;
-    }
-    return 0;
 }
