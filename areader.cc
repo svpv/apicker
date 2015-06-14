@@ -46,10 +46,12 @@ protected:
     unsigned m_stream;
     short *m_buf1;
     float *m_buf2;
+public:
+    unsigned m_pos;
 };
 
 AReader::Ctx::Ctx(const char *fname)
-    : m_buf1(NULL), m_buf2(NULL)
+    : m_buf1(NULL), m_buf2(NULL), m_pos(0)
 {
     if (fname == NULL)
 	throw "null filename";
@@ -93,6 +95,8 @@ size_t AReader::Ctx::read(void **datap)
 	    else
 		throw "cannot decode audio";
 	}
+	m_pos = av_rescale_q(m_packet.pts,
+		m_format->streams[m_stream]->time_base, (AVRational){1,100});
 	if (finished) {
 	    *datap = m_frame->extended_data;
 	    return m_frame->nb_samples;
@@ -107,6 +111,7 @@ void AReader::Ctx::seek(unsigned csec)
 	    m_format->streams[m_stream]->time_base);
     if (av_seek_frame(m_format, m_stream, pos, 0) < 0)
 	throw "cannot seek audo stream";
+    m_pos = csec;
 }
 
 AReader::Ctx::~Ctx()
@@ -163,6 +168,11 @@ int AReader::readsome()
 void AReader::seek(unsigned csec)
 {
     m_ctx->seek(csec);
+}
+
+unsigned AReader::getpos()
+{
+    return m_ctx->m_pos;
 }
 
 #include <stdio.h>

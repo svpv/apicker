@@ -8,6 +8,7 @@ public:
     ~AReader();
     int readsome();
     void seek(unsigned csec);
+    unsigned getpos();
     void loop();
     int rate();
     int channels();
