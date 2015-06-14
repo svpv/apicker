@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <cstring>
 #include <ao/ao.h>
 #include "aplayer.h"
 
@@ -148,7 +149,14 @@ void APlayer::process(float **data, size_t n)
 int main(int argc, char *argv[])
 {
     try {
+	unsigned csec = 0;
+	if (argv[1] && strcmp(argv[1], "-seek") == 0) {
+	    csec = atoi(argv[2]);
+	    argv += 2;
+	}
 	APlayer player(argv[1]);
+	if (csec)
+	    player.seek(csec);
 	player.loop();
     }
     catch (const std::exception &e) {

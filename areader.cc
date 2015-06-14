@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+extern "C" {
+#include <libavutil/mathematics.h>
+}
 #include "areader.h"
 
 class LibAV
@@ -21,6 +24,7 @@ public:
     Ctx(const char *filename);
     ~Ctx();
     size_t read(void **datap);
+    void seek(unsigned csec);
     enum AVSampleFormat fmt()
     {
 	return m_coctx->sample_fmt;
@@ -97,6 +101,14 @@ size_t AReader::Ctx::read(void **datap)
     return 0;
 }
 
+void AReader::Ctx::seek(unsigned csec)
+{
+    int64_t pos = av_rescale_q(csec, (AVRational){1,100},
+	    m_format->streams[m_stream]->time_base);
+    if (av_seek_frame(m_format, m_stream, pos, 0) < 0)
+	throw "cannot seek audo stream";
+}
+
 AReader::Ctx::~Ctx()
 {
     free(m_buf1);
@@ -146,6 +158,11 @@ int AReader::readsome()
 	throw "unsupported audio sample format";
     }
     return 1;
+}
+
+void AReader::seek(unsigned csec)
+{
+    m_ctx->seek(csec);
 }
 
 #include <stdio.h>

@@ -7,6 +7,7 @@ public:
     AReader(const char *fname);
     ~AReader();
     int readsome();
+    void seek(unsigned csec);
     void loop();
     int rate();
     int channels();
