@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
     WaveformView wv(&wf, aj);
     OverviewBar ob(&wf, aj);
 
+    ap.sig_bg_pos.connect(sigc::mem_fun(aj.operator->(), &Gtk::Adjustment::set_value));
+
     Gtk::VBox vb(false, 1);
     vb.pack_start(wv);
     vb.pack_start(ob);

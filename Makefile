@@ -13,7 +13,7 @@ all: $(PROG)
 areader.o: areader.h
 areader.o: CXXFLAGS += $(AV_CFLAGS)
 aplayer.o: aplayer.h areader.h
-aplayer.o: CXXFLAGS += $(AO_CFLAGS)
+aplayer.o: CXXFLAGS += $(AO_CFLAGS) $(GTKMM_CFLAGS)
 
 hipass.o: hipass.h sample.h
 mkwf.o: waveformgen.h rms.h hipass.h

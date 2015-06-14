@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstring>
 #include <ao/ao.h>
+#include <glibmm.h>
 #include "aplayer.h"
 
 class LibAO
@@ -32,6 +33,7 @@ public:
     }
     volatile bool m_stop;
     unsigned m_csec;
+    sigc::connection m_tick;
 private:
     int m_driver;
     ao_sample_format m_fmt;
@@ -92,16 +94,29 @@ void start_bg_thread(APlayer *ap)
 	throw "cannot create player thread";
 }
 
+static bool signalling_routine(APlayer *ap)
+{
+    ap->sig_bg_pos(ap->getpos());
+    return true;
+}
+
 void APlayer::play_bg(unsigned csec)
 {
     m_ctx->m_stop = false;
     m_ctx->m_csec = csec;
     start_bg_thread(this);
+    if (m_ctx->m_tick)
+	m_ctx->m_tick.unblock();
+    else
+	m_ctx->m_tick = Glib::signal_timeout().connect(
+		sigc::bind(sigc::ptr_fun(signalling_routine), this), 10);
 }
 
 void APlayer::stop_bg()
 {
     m_ctx->m_stop = true;
+    // XXX join thread
+    m_ctx->m_tick.block();
 }
 
 static inline float f2s(float f)
