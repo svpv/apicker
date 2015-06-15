@@ -5,13 +5,13 @@ class BPlayer::Ctx
 {
 public: 
     Ctx(Glib::RefPtr<Gtk::Adjustment> &aj)
-	: m_aj(aj), m_thread(0), m_stop(false)
+	: m_aj(aj), m_playing(false)
     {
 
     }
     Glib::RefPtr<Gtk::Adjustment> m_aj;
     pthread_t m_thread;
-    volatile bool m_stop;
+    volatile bool m_playing;
     sigc::connection m_tick;
 };
 
@@ -23,6 +23,8 @@ BPlayer::BPlayer(const char *fname, Glib::RefPtr<Gtk::Adjustment> &aj)
 
 BPlayer::~BPlayer()
 {
+    if (m_ctx->m_playing)
+	stop_bg();
     delete m_ctx;
 }
 
@@ -33,7 +35,7 @@ static void *bg_play_routine(void *arg)
     int percent;
     do
 	percent = bp->readsome();
-    while (percent < 100 && !bp->m_ctx->m_stop);
+    while (percent < 100 && bp->m_ctx->m_playing);
     return NULL;
 }
 
@@ -45,9 +47,9 @@ static bool signalling_routine(BPlayer *bp)
 
 void BPlayer::play_bg()
 {
-    if (m_ctx->m_thread)
+    if (m_ctx->m_playing)
 	stop_bg();
-    m_ctx->m_stop = false;
+    m_ctx->m_playing = true;
     if (pthread_create(&m_ctx->m_thread, NULL, bg_play_routine, this) != 0)
 	throw "cannot create player thread";
     if (m_ctx->m_tick)
@@ -59,9 +61,8 @@ void BPlayer::play_bg()
 
 void BPlayer::stop_bg()
 {
-    m_ctx->m_stop = true;
+    m_ctx->m_playing = false;
     if (pthread_join(m_ctx->m_thread, NULL) != 0)
 	throw "cannot join player thread";
-    m_ctx->m_thread = 0;
     m_ctx->m_tick.block();
 }
