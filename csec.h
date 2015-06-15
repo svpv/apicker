@@ -1,47 +1,47 @@
+/*
+ * Centisecond timecodes, H:MM:SS[.FF]
+ */
+
 #ifndef CSEC_H
 #define CSEC_H
+
+#include <exception>
 
 class CSec
 {
 public:
-    CSec(unsigned csec)
+    CSec(unsigned csec);
+    CSec(const char *str);
+
+    class ParseError : public std::exception
     {
-	char *p = buf;
-	unsigned h = csec / 100 / 3600;
-	csec -= h * 100 * 3600;
-	if (h > 9)
-	    h = 9;
-	*p++ = '0' + h;
-	*p++ = ':';
-	unsigned min = csec / 100 / 60;
-	csec -= min * 100 * 60;
-	*p++ = '0' + min / 10;
-	*p++ = '0' + min % 10;
-	*p++ = ':';
-	unsigned sec = csec / 100;
-	csec -= sec * 100;
-	*p++ = '0' + sec / 10;
-	*p++ = '0' + sec % 10;
-	*p++ = '.';
-	*p++ = '0' + csec / 10;
-	*p++ = '0' + csec % 10;
-	*p++ = '\0';
+    public:
+	const char *what() const throw() override
+	{
+	    return "timecode parse error";
+	}
+    };
+
+    unsigned csec()
+    {
+	return m_csec;
     }
 
     const char *str()
     {
-	buf[7] = '.';
-	return buf;
+	m_buf[7] = '.';
+	return m_buf;
     }
 
     const char *strsec()
     {
-	buf[7] = '\0';
-	return buf;
+	m_buf[7] = '\0';
+	return m_buf;
     }
 
 protected:
-    char buf[sizeof("0:00:00.00")];
+    unsigned m_csec;
+    char m_buf[sizeof("0:00:00.00")];
 };
 
 #endif
