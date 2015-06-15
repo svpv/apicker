@@ -6,16 +6,18 @@
 class OverviewBar : public Gtk::DrawingArea
 {
 public:
-    OverviewBar(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> m_aj) :
-	m_wf(wf), m_aj(m_aj),
+    OverviewBar(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> aj) :
+	m_wf(wf), m_aj(aj),
 	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
-	m_x1_centered(0), m_x1_current(0), m_x1_clicked(-9),
+	m_page_x_centered(0), m_page_x_current(0), m_page_x_from_click(-9),
+	m_cursor_x(0),
 	m_drag(false)
     {
 	set_size_request(1200, 48);
 	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
 	m_aj->signal_value_changed().connect(
 		sigc::mem_fun(*this, &OverviewBar::queue_draw));
+	mk_avg();
     }
 
     ~OverviewBar()
@@ -28,57 +30,57 @@ protected:
 	const size_t w = get_width();
 	const size_t h = get_height();
 
-	// page small image width
-	double w1 = w / 16;
-	// page small image left start
-	double x1 = w / 2 - w1 / 2;
+	size_t page_w = w / 16;
+	size_t page_x = (w - page_w) / 2;
 
-	m_aj->set_page_size(w);
-	size_t ix0 = m_aj->get_value();
+	// current position in avg waveform
+	size_t avg_c = m_aj->get_value() / 8;
 
-	// adjust for the beginning
-	if (ix0 / 16 < x1)
-	    x1 = ix0 / 16;
+	// leftmost position in avg waveform
+	size_t avg_x = avg_c - page_x * 2 - page_w;
 
-	if (m_avgcnt == 0)
-	    mk_avg(w);
-
-	// ai is the index in avg waveform
-	size_t ai = ix0 / 8 - x1 * 2;
-
-	// adjust for the end
-	ssize_t lack = ai + w * 2 - m_avgcnt;
-	if (lack > 0) {
-	    ai -= lack;
-	    x1 += lack / 2;
+	// if avg position is too small, move page left
+	if (avg_x > avg_c) {
+	    avg_x = 0;
+	    if (avg_c < page_w)
+		page_x = 0;
+	    else
+		page_x = (avg_c - page_w) / 2;
 	}
 
-	m_x1_centered = x1;
-
-	// we have a click?
-	if (m_x1_clicked > -9) {
-	    x1 = m_x1_clicked;
-	    if (ix0 / 16 < x1)
-		x1 = ix0 / 16;
-	    ai = ix0 / 8 - x1 * 2;
-	    lack = ai + w * 2 - m_avgcnt;
-	    if (lack > 0) {
-		ai -= lack;
-		x1 += lack / 2;
-	    }
-	    m_x1_clicked = x1;
+	// if avg position is too big, move page right
+	if (avg_x + 2 * w > m_avgcnt) {
+	    avg_x = m_avgcnt - 2 * w;
+	    if (m_avgcnt - avg_c < page_w)
+		page_x = w - page_w;
+	    else
+		page_x = w - (m_avgcnt - avg_c + page_w) / 2;
 	}
 
-	m_x1_current = x1;
+	// the page should be placed here
+	m_page_x_centered = page_x;
 
-	draw_bg(cr, w, h, x1, w1);
-	draw_wf(cr, w, h, ai);
+	// however, when the user clicks, the new position is centered gradually
+	if (m_page_x_from_click > -9) {
+	    page_x = m_page_x_from_click;
+	    avg_x = avg_c - page_x * 2 - page_w;
+	}
+
+	// the page is dipsplayed here
+	m_page_x_current = page_x;
+
+	// cursor is displayed here
+	m_cursor_x = (avg_c - avg_x) / 2;
+
+	draw_bg(cr, w, h, page_x, page_w);
+	draw_wf(cr, w, h, avg_x);
+	draw_cu(cr, m_cursor_x, h);
 	return true;
     }
 
     void draw_bg(const Cairo::RefPtr<Cairo::Context> &cr,
 	    const size_t w, const size_t h,
-	    const size_t x1, const size_t w1)
+	    const size_t page_x, const size_t page_w)
     {
 	cr->save();
 
@@ -87,13 +89,13 @@ protected:
 	cr->fill();
 
 	cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
-	cr->rectangle(x1, 0, w1, h);
+	cr->rectangle(page_x, 0, page_w, h);
 	cr->fill();
 
 	cr->restore();
     }
 
-    void mk_avg(const size_t w)
+    void mk_avg()
     {
 	m_avgcnt = m_wf->m_n / 8;
 	m_avg = (double *) realloc(m_avg, (m_avgcnt + 1) * sizeof(double));
@@ -128,13 +130,37 @@ protected:
 	cr->fill();
     }
 
+    void draw_cu(const Cairo::RefPtr<Cairo::Context> &cr, size_t x, size_t h)
+    {
+	cr->set_source_rgba(0, 1, 0.5, 1.0);
+	cr->move_to(x, 0);
+	cr->line_to(x, h);
+	cr->stroke();
+    }
+
     void click(double x)
     {
 	const size_t w = get_width();
-	m_aj->set_page_size(w);
-	double ix0 = m_aj->get_value();
-	m_x1_clicked = x;
-	m_aj->set_value(ix0 + (x - m_x1_current) * 16);
+	size_t page_w = w / 16;
+
+	// bound x
+	if (x < 0) x = 0;
+	if (x > w) x = w;
+
+	// translate click to page_x
+	size_t page_x = x - page_w / 2;
+	if (page_x > x)
+	    page_x = 0;
+	if (page_x > w - page_w)
+	    page_x = w - page_w;
+
+	// idicate page_x position from click
+	m_page_x_from_click = page_x;
+
+	// set new position in the stream
+	double diff = (x - m_cursor_x) * 16;
+	m_aj->set_value(m_aj->get_value() + diff);
+
 	queue_draw();
     }
 
@@ -167,9 +193,9 @@ protected:
 
     bool tick()
     {
-	double diff = m_x1_current - m_x1_centered;
+	double diff = m_page_x_current - m_page_x_centered;
 	if (fabs(diff) < 5) {
-	    m_x1_clicked = -9;
+	    m_page_x_from_click = -9;
 	    m_tick.block();
 	    goto out;
 	}
@@ -178,7 +204,7 @@ protected:
 	else
 	    diff += 4;
 	diff *= 0.99;
-	m_x1_clicked = m_x1_centered + diff;
+	m_page_x_from_click = m_page_x_centered + diff;
     out:
 	queue_draw();
 	return true;
@@ -189,9 +215,10 @@ private:
     double *m_avg;
     size_t m_avgcnt;
     double m_avgmax;
-    double m_x1_centered;
-    double m_x1_current;
-    double m_x1_clicked;
+    double m_page_x_centered;
+    double m_page_x_current;
+    double m_page_x_from_click;
+    size_t m_cursor_x;
     sigc::connection m_tick;
     bool m_drag;
 };
