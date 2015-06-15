@@ -23,7 +23,10 @@ mkwf: mkwf.o hipass.o areader.o
 cursor.o: cursor.h
 cursor.o: CXXFLAGS += $(GTKMM_CFLAGS)
 
-apicker.o: waveform.h waveformview.h overviewbar.h csec.h
+bplayer.o: bplayer.h aplayer.h areader.h
+bplayer.o: CXXFLAGS += $(GTKMM_CFLAGS)
+
+apicker.o: waveform.h waveformview.h overviewbar.h csec.h bplayer.h aplayer.h areader.h
 apicker.o: CXXFLAGS += $(GTKMM_CFLAGS)
-apicker: apicker.o waveform.o aplayer.o areader.o
+apicker: apicker.o waveform.o bplayer.o aplayer.o areader.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(AV_LIBS) $(GTKMM_LIBS) $(AO_LIBS) -lpthread
