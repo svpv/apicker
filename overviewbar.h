@@ -33,28 +33,28 @@ protected:
 	size_t page_w = w / 16;
 	size_t page_x = (w - page_w) / 2;
 
-	// current position in avg waveform
-	size_t avg_c = m_aj->get_value() / 8;
+	// current px position in avg waveform
+	size_t avg_c = m_aj->get_value() / 16;
 
-	// leftmost position in avg waveform
-	size_t avg_x = avg_c - page_x * 2 - page_w;
+	// leftmost px position in avg waveform
+	size_t avg_x = avg_c - page_x - page_w / 2;
 
 	// if avg position is too small, move page left
 	if (avg_x > avg_c) {
 	    avg_x = 0;
-	    if (avg_c < page_w)
+	    if (avg_c < page_w / 2)
 		page_x = 0;
 	    else
-		page_x = (avg_c - page_w) / 2;
+		page_x = avg_c - page_w / 2;
 	}
 
 	// if avg position is too big, move page right
-	if (avg_x + 2 * w > m_avgcnt) {
-	    avg_x = m_avgcnt - 2 * w;
-	    if (m_avgcnt - avg_c < page_w)
+	if (avg_x + w > m_avgcnt / 2) {
+	    avg_x = m_avgcnt / 2 - w;
+	    if (m_avgcnt / 2 - avg_c < page_w / 2)
 		page_x = w - page_w;
 	    else
-		page_x = w - (m_avgcnt - avg_c + page_w) / 2;
+		page_x = w - (m_avgcnt / 2 - avg_c) - page_w / 2;
 	}
 
 	// the page should be placed here
@@ -63,17 +63,17 @@ protected:
 	// however, when the user clicks, the new position is centered gradually
 	if (m_page_x_from_click > -9) {
 	    page_x = m_page_x_from_click;
-	    avg_x = avg_c - page_x * 2 - page_w;
+	    avg_x = avg_c - page_x - page_w / 2;
 	}
 
 	// the page is dipsplayed here
 	m_page_x_current = page_x;
 
 	// cursor is displayed here
-	m_cursor_x = (avg_c - avg_x) / 2;
+	m_cursor_x = avg_c - avg_x;
 
 	draw_bg(cr, w, h, page_x, page_w);
-	draw_wf(cr, w, h, avg_x);
+	draw_wf(cr, w, h, avg_x * 2);
 	draw_cu(cr, m_cursor_x, h);
 	return true;
     }
