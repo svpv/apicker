@@ -25,8 +25,6 @@ int main(int argc, char *argv[])
     WaveformView wv(&wf, aj);
     OverviewBar ob(&wf, aj);
 
-    ap.sig_bg_pos.connect(sigc::mem_fun(aj.operator->(), &Gtk::Adjustment::set_value));
-
     Gtk::VBox vb(false, 1);
     vb.pack_start(wv);
     vb.pack_start(ob);
@@ -34,8 +32,8 @@ int main(int argc, char *argv[])
 
     Gtk::Button bp("Play", true);
     Gtk::Button bs("Stop", true);
-    bp.signal_clicked().connect(
-	    [&ap, &aj]() { ap.play_bg(aj->get_value()); });
+    bp.signal_clicked().connect(sigc::bind(
+	    sigc::mem_fun(ap, &APlayer::play_bg), aj));
     bs.signal_clicked().connect(
 	    sigc::mem_fun(ap, &APlayer::stop_bg));
 

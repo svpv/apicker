@@ -1,13 +1,12 @@
+#include <gtkmm.h>
 #include "areader.h"
-#include <sigc++/signal.h>
 class APlayer: public AReader
 {
 public:
     APlayer(const char *fname);
     ~APlayer();
-    void play_bg(unsigned csec);
+    void play_bg(Glib::RefPtr<Gtk::Adjustment> &aj);
     void stop_bg();
-    sigc::signal<void, unsigned> sig_bg_pos;
 protected:
     void process(short  *data, size_t n) override;
     void process(short **data, size_t n) override;

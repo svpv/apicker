@@ -2,7 +2,6 @@
 #include <cmath>
 #include <cstring>
 #include <ao/ao.h>
-#include <glibmm.h>
 #include "aplayer.h"
 
 class LibAO
@@ -32,8 +31,8 @@ public:
 	return m_buf;
     }
     volatile bool m_stop;
-    unsigned m_csec;
     sigc::connection m_tick;
+    Glib::RefPtr<Gtk::Adjustment> m_aj;
 private:
     int m_driver;
     ao_sample_format m_fmt;
@@ -79,7 +78,7 @@ APlayer::~APlayer()
 static void *bg_play_routine(void *arg)
 {
     APlayer *ap = (APlayer *) arg;
-    ap->seek(ap->m_ctx->m_csec);
+    ap->seek(ap->m_ctx->m_aj->get_value());
     int percent;
     do
 	percent = ap->readsome();
@@ -96,14 +95,14 @@ void start_bg_thread(APlayer *ap)
 
 static bool signalling_routine(APlayer *ap)
 {
-    ap->sig_bg_pos(ap->getpos());
+    ap->m_ctx->m_aj->set_value(ap->getpos());
     return true;
 }
 
-void APlayer::play_bg(unsigned csec)
+void APlayer::play_bg(Glib::RefPtr<Gtk::Adjustment> &aj)
 {
     m_ctx->m_stop = false;
-    m_ctx->m_csec = csec;
+    m_ctx->m_aj = aj;
     start_bg_thread(this);
     if (m_ctx->m_tick)
 	m_ctx->m_tick.unblock();
