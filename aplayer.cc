@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstring>
+#include <pthread.h>
 #include <ao/ao.h>
 #include "aplayer.h"
 
@@ -33,6 +34,7 @@ public:
     volatile bool m_stop;
     sigc::connection m_tick;
     Glib::RefPtr<Gtk::Adjustment> m_aj;
+    pthread_t m_thread;
 private:
     int m_driver;
     ao_sample_format m_fmt;
@@ -41,7 +43,7 @@ private:
 };
 
 APlayer::Ctx::Ctx(int channels, int rate)
-    : m_buf(NULL)
+    : m_thread(0), m_buf(NULL)
 {
     m_fmt.bits = 16;
     m_fmt.channels = channels;
@@ -86,13 +88,6 @@ static void *bg_play_routine(void *arg)
     return NULL;
 }
 
-void start_bg_thread(APlayer *ap)
-{
-    pthread_t bg_thread;
-    if (pthread_create(&bg_thread, NULL, bg_play_routine, ap) != 0)
-	throw "cannot create player thread";
-}
-
 static bool signalling_routine(APlayer *ap)
 {
     ap->m_ctx->m_aj->set_value(ap->getpos());
@@ -101,9 +96,12 @@ static bool signalling_routine(APlayer *ap)
 
 void APlayer::play_bg(Glib::RefPtr<Gtk::Adjustment> &aj)
 {
+    if (m_ctx->m_thread)
+	stop_bg();
     m_ctx->m_stop = false;
     m_ctx->m_aj = aj;
-    start_bg_thread(this);
+    if (pthread_create(&m_ctx->m_thread, NULL, bg_play_routine, this) != 0)
+	throw "cannot create player thread";
     if (m_ctx->m_tick)
 	m_ctx->m_tick.unblock();
     else
@@ -114,7 +112,9 @@ void APlayer::play_bg(Glib::RefPtr<Gtk::Adjustment> &aj)
 void APlayer::stop_bg()
 {
     m_ctx->m_stop = true;
-    // XXX join thread
+    if (pthread_join(m_ctx->m_thread, NULL) != 0)
+	throw "cannot join player thread";
+    m_ctx->m_thread = 0;
     m_ctx->m_tick.block();
 }
 
