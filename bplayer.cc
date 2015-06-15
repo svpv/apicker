@@ -33,8 +33,7 @@ BPlayer::BPlayer(const char *fname, Glib::RefPtr<Gtk::Adjustment> &aj)
 
 BPlayer::~BPlayer()
 {
-    if (m_ctx->m_playing)
-	stop_bg();
+    stop_bg();
     delete m_ctx;
 }
 
@@ -58,8 +57,7 @@ static bool signalling_routine(BPlayer *bp)
 
 void BPlayer::play_bg()
 {
-    if (m_ctx->m_playing)
-	stop_bg();
+    stop_bg();
     seek(m_ctx->m_aj->get_value());
     m_ctx->m_playing = true;
     if (pthread_create(&m_ctx->m_thread, NULL, bg_play_routine, this) != 0)
@@ -73,6 +71,8 @@ void BPlayer::play_bg()
 
 void BPlayer::stop_bg()
 {
+    if (!m_ctx->m_playing)
+	return;
     m_ctx->m_playing = false;
     if (pthread_join(m_ctx->m_thread, NULL) != 0)
 	throw "cannot join player thread";
