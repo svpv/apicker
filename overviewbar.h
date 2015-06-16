@@ -72,6 +72,10 @@ protected:
 	if (m_page_x_from_click > -9) {
 	    page_x = m_page_x_from_click;
 	    avg_x = avg_c - page_x - page_w / 2;
+	    if (avg_x > avg_c)
+		avg_x = 0;
+	    if (avg_x + w > m_avgcnt / 2)
+		avg_x = m_avgcnt / 2 - w;
 	}
 
 	// the page is dipsplayed here
