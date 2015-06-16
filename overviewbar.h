@@ -119,10 +119,14 @@ protected:
 	const unsigned char *p = m_wf->m_v;
 	for (size_t i = 0; i < m_avgcnt; i++) {
 	    double sum = 0;
+	    unsigned char p_max = 0;
 	    const unsigned char *p_end = p + 8;
-	    while (p < p_end)
+	    while (p < p_end) {
+		if (*p > p_max)
+		    p_max = *p;
 		sum += *p++;
-	    sum /= 8;
+	    }
+	    sum += p_max;
 	    if (sum > m_avgmax)
 		m_avgmax = sum;
 	    m_avg[i] = sum;
