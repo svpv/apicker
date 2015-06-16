@@ -39,7 +39,7 @@ protected:
 	const size_t h = get_height();
 
 	size_t page_w = w / 16;
-	size_t page_x = (w - page_w) / 2;
+	size_t page_x = w / 2 - page_w / 2;
 
 	// current px position in avg waveform
 	size_t avg_c = m_aj->get_value() / 16;
