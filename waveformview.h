@@ -10,7 +10,8 @@ class WaveformView : public Gtk::DrawingArea
 public:
     WaveformView(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> aj) :
 	m_wf(wf), m_aj(aj),
-	m_cursor_x_centered(0), m_cursor_x_current(0), m_cursor_x_from_click(-9)
+	m_cursor_x_centered(0), m_cursor_x_current(0), m_cursor_x_from_click(-9),
+	m_drag(false)
     {
 	set_size_request(1200, 280);
 	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
