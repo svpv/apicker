@@ -33,22 +33,58 @@ int main(int argc, char *argv[])
     vb.pack_start(ob);
     vb.pack_start(sb);
 
-    Gtk::Button bp("Play", true);
-    Gtk::Button bs("Stop", true);
+    Gtk::Button bp("Play");
+    Gtk::Button bs("Stop");
+    Gtk::Button ok("OK");
+    Gtk::Button bpl("Play left");
+    Gtk::Button bpr("Play right");
+    Gtk::Button bpt("Play through");
+    bp.set_always_show_image(); bp.set_image_from_icon_name("media-playback-start");
+    bs.set_always_show_image(); bs.set_image_from_icon_name("media-playback-stop");
+    ok.set_always_show_image(); ok.set_image_from_icon_name("stock_redo");
+    bpl.set_always_show_image(); bpl.set_image_from_icon_name("player_end");
+    bpr.set_always_show_image(); bpr.set_image_from_icon_name("media-playback-start");
+    bpt.set_always_show_image(); bpt.set_image_from_icon_name("media-seek-forward");
+
     bp.signal_clicked().connect(sigc::mem_fun(bg, &BPlayer::play_bg));
     bs.signal_clicked().connect(sigc::mem_fun(bg, &BPlayer::stop_bg));
 
-    Glib::RefPtr<Gtk::Adjustment> aj1(Gtk::Adjustment::create(0, 0, wf.m_n));
-    Glib::RefPtr<Gtk::Adjustment> aj2(Gtk::Adjustment::create(0, 0, wf.m_n));
-    CSecSpinButton tc1(aj1);
-    CSecSpinButton tc2(aj2);
+    CSecSpinButton tc(aj);
+    tc.set_width_chars(12);
+
+    CSec cs1(0u);
+    CSec cs2(wf.m_n);
+    Gtk::Entry p1; p1.set_text(cs1.str()); p1.set_sensitive(false);
+    Gtk::Entry p2; p2.set_text(cs2.str()); p2.set_sensitive(false);
+
+    Gtk::Button s1("Set");
+    Gtk::Button s2("Set");
+    s1.set_always_show_image(); s1.set_image_from_icon_name("back");
+    s2.set_always_show_image(); s2.set_image_from_icon_name("forward");
+    s1.signal_clicked().connect([&]{ p1.set_text(tc.get_text()); });
+    s2.signal_clicked().connect([&]{ p2.set_text(tc.get_text()); });
+
+    Gtk::VSeparator v1;
+    Gtk::VSeparator v2;
+    Gtk::VSeparator v3;
 
     Gtk::HBox hb(false, 1);
-    hb.pack_start(tc1);
+    hb.pack_start(p1);
+    hb.pack_start(s1);
+    hb.pack_start(v1);
+    hb.pack_start(bpt);
+    hb.pack_start(bpl);
+    hb.pack_start(bpr);
+    hb.pack_start(tc);
     hb.pack_start(bp);
     hb.pack_start(bs);
+    hb.pack_start(v2);
+    hb.pack_start(s2);
+    hb.pack_start(p2);
+    hb.pack_start(v3);
+    hb.pack_start(ok);
+
     vb.pack_start(hb);
-    hb.pack_start(tc2);
 
     Gtk::Window win;
     win.add(vb);
