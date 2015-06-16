@@ -10,13 +10,13 @@ public:
 	m_wf(wf), m_aj(aj),
 	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
 	m_page_x_centered(0), m_page_x_current(0), m_page_x_from_click(-9),
-	m_cursor_x(0),
+	m_cursor_x(0), m_avg_c(0),
 	m_drag(false)
     {
 	set_size_request(1200, 48);
 	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
 	m_aj->signal_value_changed().connect(
-		sigc::mem_fun(*this, &OverviewBar::queue_draw));
+		sigc::mem_fun(*this, &OverviewBar::maybe_queue_draw));
 	mk_avg();
     }
 
@@ -25,6 +25,14 @@ public:
 	free(m_avg);
     }
 protected:
+    void maybe_queue_draw()
+    {
+	// current px position in avg waveform
+	size_t avg_c = m_aj->get_value() / 16;
+	if (avg_c != m_avg_c)
+	    queue_draw();
+    }
+
     bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
     {
 	const size_t w = get_width();
@@ -71,6 +79,9 @@ protected:
 
 	// cursor is displayed here
 	m_cursor_x = avg_c - avg_x;
+
+	// save current position in avg waveform
+	m_avg_c = avg_c;
 
 	draw_bg(cr, w, h, page_x, page_w);
 	draw_wf(cr, w, h, avg_x * 2);
@@ -219,6 +230,7 @@ private:
     double m_page_x_current;
     double m_page_x_from_click;
     size_t m_cursor_x;
+    size_t m_avg_c;
     sigc::connection m_tick;
     bool m_drag;
 };
