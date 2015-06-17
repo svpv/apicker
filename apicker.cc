@@ -80,6 +80,22 @@ int main(int argc, char *argv[])
     s1.signal_clicked().connect([&]{ p1.set_text(tc.get_text()); });
     s2.signal_clicked().connect([&]{ p2.set_text(tc.get_text()); });
 
+    auto on_ok = [&]
+    {
+	CSec cs1(p1.get_text().c_str());
+	if (cs1.csec())
+	    printf("-ss %s", cs1.str());
+	CSec cs2(p2.get_text().c_str());
+	if (cs2.csec() < wf.m_n) {
+	    CSec cs3(cs2.csec() - cs1.csec());
+	    printf("%s-t %s", cs1.csec() ? " " : "", cs3.str());
+	}
+	printf("\n");
+	app.quit();
+    };
+
+    ok.signal_clicked().connect(on_ok);
+
     Gtk::VSeparator v1;
     Gtk::VSeparator v2;
     Gtk::VSeparator v3;
