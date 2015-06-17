@@ -55,7 +55,13 @@ void BPlayer::play_bg(unsigned begin, unsigned end, sigc::slot<void> reset)
     if (passage)
 	pos = begin;
 
-    seek(pos);
+    try {
+	seek(pos);
+    }
+    catch (...) {
+	fprintf(stderr, "cannot seek\n");
+	return;
+    }
 
     m_ctx->m_playing_requested = true;
     m_ctx->m_child_exiting = false;
