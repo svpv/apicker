@@ -1,12 +1,17 @@
 #ifndef AREADER_H
 #define AREADER_H
 #include <stddef.h>
+#include <limits.h>
 class AReader
 {
 public:
     AReader(const char *fname);
     ~AReader();
-    int readsome();
+
+    static const unsigned AEOF = UINT_MAX;
+    unsigned read1();
+    void process1();
+
     void seek(unsigned csec);
     unsigned getpos();
     void loop();

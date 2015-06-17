@@ -1,12 +1,14 @@
 #include <atomic>
-#include <pthread.h>
+#include <thread>
+#include "sigcfix.h"
 #include "bplayer.h"
 
 class BPlayer::Ctx
 {
 public: 
-    Ctx(Glib::RefPtr<Gtk::Adjustment> &aj, BPlayer &bp)
-	: m_aj(aj), m_playing(false), m_signalling(false)
+    Ctx(Glib::RefPtr<Gtk::Adjustment> &aj, BPlayer &bp) :
+	m_aj(aj), m_playing_requested(false), m_child_exiting(false),
+	m_signalling(false), m_endpos(AEOF), m_saved_pos(AEOF)
     {
 	m_aj->signal_value_changed().connect(
 		[this, &bp]() { change_pos(bp); });
@@ -14,14 +16,17 @@ public:
 
     void change_pos(BPlayer &bp)
     {
-	if (m_playing && !m_signalling)
+	if (m_playing_requested && !m_signalling)
 	    bp.play_bg(); // rewind
     }
 
     Glib::RefPtr<Gtk::Adjustment> m_aj;
-    pthread_t m_thread;
-    volatile std::atomic<bool> m_playing;
+    std::thread m_thread;
+    volatile std::atomic<bool> m_playing_requested;
+    volatile std::atomic<bool> m_child_exiting;
     bool m_signalling;
+    unsigned m_endpos;
+    unsigned m_saved_pos;
     sigc::connection m_tick;
 };
 
@@ -37,44 +42,70 @@ BPlayer::~BPlayer()
     delete m_ctx;
 }
 
-static void *bg_play_routine(void *arg)
+void BPlayer::play_bg(unsigned begin, unsigned end)
 {
-    BPlayer *bp = (BPlayer *) arg;
-    int percent;
-    do
-	percent = bp->readsome();
-    while (percent < 100 && bp->m_ctx->m_playing);
-    return NULL;
-}
+    stop_bg();
 
-static bool signalling_routine(BPlayer *bp)
-{
-    bp->m_ctx->m_signalling = true;
-    bp->m_ctx->m_aj->set_value(bp->getpos());
-    bp->m_ctx->m_signalling = false;
-    return true;
+    bool passage = !(begin == AEOF && end == 0);
+    unsigned pos = m_ctx->m_aj->get_value();
+    if (!passage)
+	m_ctx->m_saved_pos = AEOF;
+    else {
+	m_ctx->m_saved_pos = pos;
+	pos = begin;
+    }
+
+    seek(pos);
+
+    m_ctx->m_playing_requested = true;
+    m_ctx->m_child_exiting = false;
+    m_ctx->m_endpos = passage ? end : AEOF;
+
+    auto bg_loop = [this]
+    {
+	while (1) {
+	    unsigned pos = read1();
+	    if (pos >= m_ctx->m_endpos)
+		break;
+	    if (!m_ctx->m_playing_requested)
+		break;
+	    process1();
+	    if (!m_ctx->m_playing_requested)
+		break;
+	}
+	m_ctx->m_child_exiting = true;
+    };
+
+    m_ctx->m_thread = std::thread(bg_loop);
+
+    auto on_tick = [this]() -> bool
+    {
+	m_ctx->m_signalling = true;
+	m_ctx->m_aj->set_value(getpos());
+	m_ctx->m_signalling = false;
+	if (m_ctx->m_child_exiting)
+	    stop_bg();
+	return true;
+    };
+
+    if (m_ctx->m_tick)
+	m_ctx->m_tick.unblock();
+    else
+	m_ctx->m_tick = Glib::signal_timeout().connect(on_tick, 10);
 }
 
 void BPlayer::play_bg()
 {
-    stop_bg();
-    seek(m_ctx->m_aj->get_value());
-    m_ctx->m_playing = true;
-    if (pthread_create(&m_ctx->m_thread, NULL, bg_play_routine, this) != 0)
-	throw "cannot create player thread";
-    if (m_ctx->m_tick)
-	m_ctx->m_tick.unblock();
-    else
-	m_ctx->m_tick = Glib::signal_timeout().connect(
-		sigc::bind(sigc::ptr_fun(signalling_routine), this), 10);
+    play_bg(AEOF, 0);
 }
 
 void BPlayer::stop_bg()
 {
-    if (!m_ctx->m_playing)
+    if (!m_ctx->m_playing_requested)
 	return;
-    m_ctx->m_playing = false;
-    if (pthread_join(m_ctx->m_thread, NULL) != 0)
-	throw "cannot join player thread";
+    m_ctx->m_playing_requested = false;
+    m_ctx->m_thread.join();
     m_ctx->m_tick.block();
+    if (m_ctx->m_saved_pos != AEOF)
+	m_ctx->m_aj->set_value(m_ctx->m_saved_pos);
 }

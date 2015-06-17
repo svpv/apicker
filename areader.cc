@@ -25,6 +25,13 @@ public:
     ~Ctx();
     size_t read(void **datap);
     void seek(unsigned csec);
+    unsigned read1()
+    {
+	m_read_n = read(&m_read_data);
+	if (m_read_n == 0)
+	    m_pos = AEOF;
+	return m_pos;
+    }
     enum AVSampleFormat fmt()
     {
 	return m_coctx->sample_fmt;
@@ -48,6 +55,8 @@ protected:
     float *m_buf2;
 public:
     unsigned m_pos;
+    void *m_read_data;
+    size_t m_read_n;
 };
 
 AReader::Ctx::Ctx(const char *fname)
@@ -140,29 +149,29 @@ int AReader::rate()
     return m_ctx->rate();
 }
 
-int AReader::readsome()
+unsigned AReader::read1()
 {
-    void *data;
-    size_t n = m_ctx->read(&data);
-    if (n == 0)
-	return 100;
+    return m_ctx->read1();
+}
+
+void AReader::process1()
+{
     switch (m_ctx->fmt()) {
     case AV_SAMPLE_FMT_S16:
-	process(*(short **) data, n);
+	process(*(short **) m_ctx->m_read_data, m_ctx->m_read_n);
 	break;
     case AV_SAMPLE_FMT_S16P:
-	process( (short **) data, n);
+	process( (short **) m_ctx->m_read_data, m_ctx->m_read_n);
 	break;
     case AV_SAMPLE_FMT_FLT:
-	process(*(float **) data, n);
+	process(*(float **) m_ctx->m_read_data, m_ctx->m_read_n);
 	break;
     case AV_SAMPLE_FMT_FLTP:
-	process( (float **) data, n);
+	process( (float **) m_ctx->m_read_data, m_ctx->m_read_n);
 	break;
     default:
 	throw "unsupported audio sample format";
     }
-    return 1;
 }
 
 void AReader::seek(unsigned csec)
@@ -180,20 +189,7 @@ unsigned AReader::getpos()
 
 void AReader::loop()
 {
-    int percent;
-    int tty = isatty(2);
-    const char *sep = "";
-    do {
-	percent = readsome();
-	if (tty) {
-	    fprintf(stderr, "%s%d%%", sep, percent);
-	    sep = "\r";
-	}
-	else if ((percent % 10) == 0) {
-	    fprintf(stderr, "%s%d%%", sep, percent);
-	    sep = " ";
-	}
-    }
-    while (percent < 100);
-    putc('\n', stderr);
+    unsigned pos;
+    while ((pos = read1()) != AEOF)
+	process1();
 }

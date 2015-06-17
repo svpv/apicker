@@ -46,8 +46,24 @@ int main(int argc, char *argv[])
     bpr.set_always_show_image(); bpr.set_image_from_icon_name("media-playback-start");
     bpt.set_always_show_image(); bpt.set_image_from_icon_name("media-seek-forward");
 
-    bp.signal_clicked().connect(sigc::mem_fun(bg, &BPlayer::play_bg));
-    bs.signal_clicked().connect(sigc::mem_fun(bg, &BPlayer::stop_bg));
+    bp.signal_clicked().connect([&]{ bg.play_bg(); });
+    bs.signal_clicked().connect([&]{ bg.stop_bg(); });
+
+    auto shortplay = [&](unsigned minus, unsigned plus)
+    {
+	unsigned pos = aj->get_value();
+	unsigned begin = pos - minus;
+	if (begin > pos)
+	    begin = 0;
+	unsigned end = pos + plus;
+	if (end > wf.m_n)
+	    end = wf.m_n;
+	bg.play_bg(begin, end);
+    };
+
+    bpl.signal_clicked().connect([&]{ shortplay(400, 000); });
+    bpr.signal_clicked().connect([&]{ shortplay(000, 400); });
+    bpt.signal_clicked().connect([&]{ shortplay(300, 300); });
 
     CSecSpinButton tc(aj);
     tc.set_width_chars(12);
