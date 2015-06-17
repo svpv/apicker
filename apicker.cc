@@ -58,13 +58,13 @@ int main(int argc, char *argv[])
 	unsigned end = pos + plus;
 	if (end > wf.m_n)
 	    end = wf.m_n;
-	wv.scrolling(false);
-	ob.scrolling(false);
+	wv.short_passage(pos);
+	ob.short_passage(pos);
 	auto reset = [&aj, &wv, &ob, pos]
 	{
 	    aj->set_value(pos);
-	    wv.scrolling(true);
-	    ob.scrolling(true);
+	    wv.short_passage();
+	    ob.short_passage();
 	};
 	bg.play_bg(begin, end, reset);
     };

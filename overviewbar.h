@@ -11,7 +11,7 @@ public:
     OverviewBar(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> aj) :
 	m_wf(wf), m_aj(aj),
 	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
-	m_avg_c(0), m_avg_x(0), m_page_x_current(0), m_scrolling(true)
+	m_avg_c(0), m_avg_x(0), m_page_x_current(0)
     {
 	set_size_request(1200, 48);
 	m_aj->signal_value_changed().connect(
@@ -22,11 +22,6 @@ public:
     ~OverviewBar()
     {
 	free(m_avg);
-    }
-
-    void scrolling(bool yes)
-    {
-	m_scrolling = yes;
     }
 protected:
     void maybe_queue_draw()
@@ -69,10 +64,12 @@ protected:
 		page_x = w - (m_avgcnt / 2 - avg_c) - page_w / 2;
 	}
 
+	size_t mark_x = 0;
+
 	// when automatic scrolling disabled, use previous avg_x
-	if (!m_scrolling) {
+	if (m_mark != NOMARK) {
 	    avg_x = m_avg_x;
-	    page_x = m_page_x_current;
+	    mark_x = m_mark / 16 - m_avg_x;
 	}
 
 	// cursor should be displayed here
@@ -105,6 +102,8 @@ protected:
 	draw_bg(cr, w, h, page_x, page_w);
 	draw_wf(cr, w, h, avg_x * 2);
 	draw_cu(cr, m_cursor_x_current, h);
+	if (m_mark != NOMARK)
+	    draw_cu(cr, mark_x, h, true);
 	return true;
     }
 
@@ -164,14 +163,6 @@ protected:
 	cr->fill();
     }
 
-    void draw_cu(const Cairo::RefPtr<Cairo::Context> &cr, size_t x, size_t h)
-    {
-	cr->set_source_rgba(0, 1, 0.5, 1.0);
-	cr->move_to(x, 0);
-	cr->line_to(x, h);
-	cr->stroke();
-    }
-
     void click(double x) override
     {
 	double diff = click0(x);
@@ -188,7 +179,6 @@ private:
     size_t m_avg_c;
     size_t m_avg_x;
     size_t m_page_x_current;
-    bool m_scrolling;
 };
 
 #endif

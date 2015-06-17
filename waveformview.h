@@ -11,17 +11,13 @@ class WaveformView : public WaveformViewBase
 public:
     WaveformView(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> aj) :
 	m_wf(wf), m_aj(aj),
-	m_wf_x(0), m_scrolling(true)
+	m_wf_x(0)
     {
 	set_size_request(1200, 280);
 	m_aj->signal_value_changed().connect(
 		sigc::mem_fun(*this, &WaveformView::queue_draw));
     }
 
-    void scrolling(bool yes)
-    {
-	m_scrolling = yes;
-    }
 protected:
     bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
     {
@@ -57,9 +53,12 @@ protected:
 	    cursor_x = w - (m_wf->m_n - wf_c);
 	}
 
+	size_t mark_x = 0;
+
 	// when automatic scrolling disabled, use previous wf_x
-	if (!m_scrolling) {
+	if (m_mark != NOMARK) {
 	    wf_x = m_wf_x;
+	    mark_x = m_mark - wf_x;
 	    cursor_x = wf_c - wf_x;
 	}
 
@@ -100,10 +99,11 @@ protected:
 	cr->fill();
 
 	// draw cursor
-	cr->set_source_rgba(0, 1, 0.5, 1.0);
-	cr->move_to(cursor_x, h);
-	cr->line_to(cursor_x, h - 255);
-	cr->stroke();
+	draw_cu(cr, cursor_x, 255);
+
+	// draw mark
+	if (m_mark != NOMARK)
+	    draw_cu(cr, mark_x, 255, true);
 
 	return true;
     }
@@ -118,7 +118,6 @@ protected:
     Waveform *m_wf;
     Glib::RefPtr<Gtk::Adjustment> m_aj;
     size_t m_wf_x;
-    bool m_scrolling;
 };
 
 #endif

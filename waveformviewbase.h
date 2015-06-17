@@ -1,6 +1,8 @@
 #ifndef WAVEFORMVIEWBASE_H
 #define WAVEFORMVIEWBASE_H
 
+#include <limits.h>
+#include <vector>
 #include <gtkmm/drawingarea.h>
 #include <glibmm/main.h>
 
@@ -8,10 +10,33 @@ class WaveformViewBase : public Gtk::DrawingArea
 {
 protected:
     WaveformViewBase() :
-	m_drag(false),
+	m_drag(false), m_mark(NOMARK),
 	m_cursor_x_centered(0), m_cursor_x_current(0), m_cursor_x_from_click(-9)
     {
 	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
+    }
+public:
+    static const unsigned NOMARK = UINT_MAX;
+
+    // enable short passage mode at around the mark, without scrolling
+    void short_passage(unsigned mark = NOMARK)
+    {
+	m_mark = mark;
+    }
+protected:
+
+    void draw_cu(const Cairo::RefPtr<Cairo::Context> &cr, size_t x, size_t h1, bool dash = false)
+    {
+	const size_t h = get_height();
+	cr->set_source_rgba(0, 1.0, 0.3, 1.0);
+	if (dash) {
+	    const double dash_values[] = { 4, 4 };
+	    const std::vector<double> dash_vector(dash_values, dash_values + 2);
+	    cr->set_dash(dash_vector, 3);
+	}
+	cr->move_to(x, h);
+	cr->line_to(x, h - h1);
+	cr->stroke();
     }
 
     virtual void click(double x) = 0;
@@ -78,6 +103,7 @@ protected:
     }
 
     bool m_drag;
+    unsigned m_mark;
     sigc::connection m_tick;
 
     double m_cursor_x_centered;
