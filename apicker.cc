@@ -1,11 +1,12 @@
 #include <cstring>
+#include <iostream>
 #include "waveform.h"
 #include "waveformview.h"
 #include "overviewbar.h"
 #include "bplayer.h"
 #include "csecspinbutton.h"
 
-int main(int argc, char *argv[])
+static void apicker(int argc, char *argv[])
 {
     Gtk::Main app(argc, argv);
 
@@ -130,5 +131,20 @@ int main(int argc, char *argv[])
     win.add(vb);
     win.show_all();
     app.run(win);
-    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    try {
+	apicker(argc, argv);
+	return 0;
+    }
+    catch (const std::exception &e) {
+	std::cerr << e.what() << std::endl;
+	return 1;
+    }
+    catch (const char *s) {
+	std::cerr << s << std::endl;
+	return 1;
+    }
 }
