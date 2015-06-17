@@ -10,8 +10,7 @@ public:
 	m_wf(wf), m_aj(aj),
 	m_avg(NULL), m_avgcnt(0), m_avgmax(0),
 	m_page_x_centered(0), m_page_x_current(0), m_page_x_from_click(-9),
-	m_cursor_x(0), m_avg_c(0),
-	m_drag(false)
+	m_cursor_x(0), m_avg_c(0), m_avg_x(0), m_drag(false), m_scrolling(true)
     {
 	set_size_request(1200, 48);
 	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
@@ -23,6 +22,11 @@ public:
     ~OverviewBar()
     {
 	free(m_avg);
+    }
+
+    void scrolling(bool yes)
+    {
+	m_scrolling = yes;
     }
 protected:
     void maybe_queue_draw()
@@ -65,6 +69,12 @@ protected:
 		page_x = w - (m_avgcnt / 2 - avg_c) - page_w / 2;
 	}
 
+	// when automatic scrolling disabled, use previous avg_x
+	if (!m_scrolling) {
+	    avg_x = m_avg_x;
+	    page_x = m_page_x_current;
+	}
+
 	// the page should be placed here
 	m_page_x_centered = page_x;
 
@@ -86,6 +96,9 @@ protected:
 
 	// save current position in avg waveform
 	m_avg_c = avg_c;
+
+	// save leftmost position in avg waveform
+	m_avg_x = avg_x;
 
 	draw_bg(cr, w, h, page_x, page_w);
 	draw_wf(cr, w, h, avg_x * 2);
@@ -239,8 +252,10 @@ private:
     double m_page_x_from_click;
     size_t m_cursor_x;
     size_t m_avg_c;
+    size_t m_avg_x;
     sigc::connection m_tick;
     bool m_drag;
+    bool m_scrolling;
 };
 
 #endif

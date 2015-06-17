@@ -14,7 +14,7 @@ public:
     BPlayer(const char *fname, Glib::RefPtr<Gtk::Adjustment> &aj);
     ~BPlayer();
     void play_bg();
-    void play_bg(unsigned start, unsigned end);
+    void play_bg(unsigned start, unsigned end, sigc::slot<void> reset = []{});
     void stop_bg();
 private:
     class Ctx;

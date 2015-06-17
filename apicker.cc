@@ -58,7 +58,15 @@ int main(int argc, char *argv[])
 	unsigned end = pos + plus;
 	if (end > wf.m_n)
 	    end = wf.m_n;
-	bg.play_bg(begin, end);
+	wv.scrolling(false);
+	ob.scrolling(false);
+	auto reset = [&aj, &wv, &ob, pos]
+	{
+	    aj->set_value(pos);
+	    wv.scrolling(true);
+	    ob.scrolling(true);
+	};
+	bg.play_bg(begin, end, reset);
     };
 
     bpl.signal_clicked().connect([&]{ shortplay(400, 000); });

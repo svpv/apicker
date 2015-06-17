@@ -11,12 +11,17 @@ public:
     WaveformView(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> aj) :
 	m_wf(wf), m_aj(aj),
 	m_cursor_x_centered(0), m_cursor_x_current(0), m_cursor_x_from_click(-9),
-	m_drag(false)
+	m_wf_x(0), m_drag(false), m_scrolling(true)
     {
 	set_size_request(1200, 280);
 	add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
 	m_aj->signal_value_changed().connect(
 		sigc::mem_fun(*this, &WaveformView::queue_draw));
+    }
+
+    void scrolling(bool yes)
+    {
+	m_scrolling = yes;
     }
 protected:
     bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
@@ -53,8 +58,17 @@ protected:
 	    cursor_x = w - (m_wf->m_n - wf_c);
 	}
 
+	// when automatic scrolling disabled, use previous wf_x
+	if (!m_scrolling) {
+	    wf_x = m_wf_x;
+	    cursor_x = wf_c - wf_x;
+	}
+
 	// cursor should be displayed here
 	m_cursor_x_centered = cursor_x;
+
+	// wavefrom displayed starting from here
+	m_wf_x = wf_x;
 
 	// however, when the user clicks, the new position is centered gradually
 	if (m_cursor_x_from_click > -9) {
@@ -164,8 +178,10 @@ protected:
     double m_cursor_x_centered;
     double m_cursor_x_current;
     double m_cursor_x_from_click;
+    size_t m_wf_x;
     sigc::connection m_tick;
     bool m_drag;
+    bool m_scrolling;
 };
 
 #endif

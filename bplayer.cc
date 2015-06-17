@@ -8,7 +8,7 @@ class BPlayer::Ctx
 public: 
     Ctx(Glib::RefPtr<Gtk::Adjustment> &aj, BPlayer &bp) :
 	m_aj(aj), m_playing_requested(false), m_child_exiting(false),
-	m_signalling(false), m_endpos(AEOF), m_saved_pos(AEOF)
+	m_signalling(false), m_endpos(AEOF)
     {
 	m_aj->signal_value_changed().connect(
 		[this, &bp]() { change_pos(bp); });
@@ -16,8 +16,12 @@ public:
 
     void change_pos(BPlayer &bp)
     {
-	if (m_playing_requested && !m_signalling)
-	    bp.play_bg(); // rewind
+	if (m_playing_requested && !m_signalling) {
+	    if (m_endpos != AEOF)
+		bp.stop_bg(); // stop if playing short passage
+	    else
+		bp.play_bg(); // othrwise, rewind and continue
+	}
     }
 
     Glib::RefPtr<Gtk::Adjustment> m_aj;
@@ -26,8 +30,8 @@ public:
     volatile std::atomic<bool> m_child_exiting;
     bool m_signalling;
     unsigned m_endpos;
-    unsigned m_saved_pos;
     sigc::connection m_tick;
+    sigc::slot<void> m_reset;
 };
 
 BPlayer::BPlayer(const char *fname, Glib::RefPtr<Gtk::Adjustment> &aj)
@@ -42,24 +46,21 @@ BPlayer::~BPlayer()
     delete m_ctx;
 }
 
-void BPlayer::play_bg(unsigned begin, unsigned end)
+void BPlayer::play_bg(unsigned begin, unsigned end, sigc::slot<void> reset)
 {
     stop_bg();
 
     bool passage = !(begin == AEOF && end == 0);
     unsigned pos = m_ctx->m_aj->get_value();
-    if (!passage)
-	m_ctx->m_saved_pos = AEOF;
-    else {
-	m_ctx->m_saved_pos = pos;
+    if (passage)
 	pos = begin;
-    }
 
     seek(pos);
 
     m_ctx->m_playing_requested = true;
     m_ctx->m_child_exiting = false;
     m_ctx->m_endpos = passage ? end : AEOF;
+    m_ctx->m_reset = reset;
 
     auto bg_loop = [this]
     {
@@ -106,6 +107,5 @@ void BPlayer::stop_bg()
     m_ctx->m_playing_requested = false;
     m_ctx->m_thread.join();
     m_ctx->m_tick.block();
-    if (m_ctx->m_saved_pos != AEOF)
-	m_ctx->m_aj->set_value(m_ctx->m_saved_pos);
+    m_ctx->m_reset();
 }
