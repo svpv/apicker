@@ -1,7 +1,7 @@
 #include <stdint.h>
+extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-extern "C" {
 #include <libavutil/mathematics.h>
 }
 #include "areader.h"
