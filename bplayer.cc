@@ -1,6 +1,5 @@
 #include <atomic>
 #include <thread>
-#include "sigcfix.h"
 #include "bplayer.h"
 
 class BPlayer::Ctx

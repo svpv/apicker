@@ -1,4 +1,4 @@
-CXX = g++-4.9
+CXX = g++
 CXXFLAGS = -Ofast -g -Wall -std=c++11
 AV_CFLAGS = `pkg-config --cflags libavformat libavcodec libavutil`
 AV_LIBS = `pkg-config --libs libavformat libavcodec libavutil`
