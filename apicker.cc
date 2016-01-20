@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cassert>
 #include <iostream>
 #include "waveform.h"
 #include "waveformview.h"
@@ -14,8 +15,11 @@ static void apicker(int argc, char *argv[])
 	throw "no argv";
 
     const char *av2 = argv[2];
+    const char *av3 = NULL;
     std::string av2s(argv[1]);
-    if (av2 == NULL) {
+    if (av2)
+	av3 = argv[3];
+    else {
 	av2s.append(".wf");
 	av2 = av2s.c_str();
     }
@@ -26,7 +30,13 @@ static void apicker(int argc, char *argv[])
 
     Gtk::Scrollbar sb(aj);
 
-    WaveformView wv(&wf, aj);
+    Waveform *wf2 = NULL;
+    if (av3) {
+	wf2 = new Waveform(av3);
+	assert(wf.m_n == wf2->m_n);
+    }
+
+    WaveformView wv(&wf, aj, wf2);
     OverviewBar ob(&wf, aj);
 
     Gtk::VBox vb(false, 1);
