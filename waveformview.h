@@ -9,8 +9,8 @@
 class WaveformView : public WaveformViewBase
 {
 public:
-    WaveformView(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> aj, Waveform *wf2 = NULL) :
-	m_wf(wf), m_aj(aj), m_wf2(wf2),
+    WaveformView(Waveform *wf, Glib::RefPtr<Gtk::Adjustment> aj, Waveform *wf2 = NULL, Waveform *wf3 = NULL) :
+	m_wf(wf), m_aj(aj), m_wf2(wf2), m_wf3(wf3),
 	m_wf_x(0)
     {
 	set_size_request(1200, 280);
@@ -100,10 +100,19 @@ protected:
 
 	// outline wf2
 	if (m_wf2) {
-	    cr->set_source_rgba(1, 0, 0, 0.5);
+	    cr->set_source_rgba(0, 0, 1, 0.5);
 	    cr->move_to(0, h - m_wf2->m_v[0 + wf_x]);
 	    for (size_t i = 1; i < w; i++)
 		cr->line_to(i, h - m_wf2->m_v[i + wf_x]);
+	    cr->stroke();
+	}
+
+	// outline wf3
+	if (m_wf3) {
+	    cr->set_source_rgba(1, 0, 0, 0.5);
+	    cr->move_to(0, h - m_wf3->m_v[0 + wf_x]);
+	    for (size_t i = 1; i < w; i++)
+		cr->line_to(i, h - m_wf3->m_v[i + wf_x]);
 	    cr->stroke();
 	}
 
@@ -127,6 +136,7 @@ protected:
     Waveform *m_wf;
     Glib::RefPtr<Gtk::Adjustment> m_aj;
     Waveform *m_wf2;
+    Waveform *m_wf3;
     size_t m_wf_x;
 };
 
