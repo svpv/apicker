@@ -11,7 +11,7 @@ class WaveformGen: public RMS, protected HiPass
 {
 public:
     WaveformGen(const char *fname)
-	: RMS(fname), HiPass(channels(), rate(), 200)
+	: RMS(fname), HiPass(channels(), rate(), 100)
     {
     }
     void save(FILE *fp)
