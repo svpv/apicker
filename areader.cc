@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -92,26 +93,39 @@ AReader::Ctx::Ctx(const char *fname)
 
 size_t AReader::Ctx::read(void **datap)
 {
-    while (av_read_frame(m_format, &m_packet) >= 0)
-    {
-	if (m_packet.stream_index != (int) m_stream)
+    int rc = avcodec_receive_frame(m_coctx, m_frame);
+    while (rc == AVERROR(EAGAIN)) {
+	int xx = av_read_frame(m_format, &m_packet);
+	if (xx == AVERROR_EOF)
+	    xx = avcodec_send_packet(m_coctx, NULL);
+	else if (xx < 0)
+	    throw "cannot decode audio";
+	else if (m_packet.stream_index != (int) m_stream) {
+	    av_packet_unref(&m_packet);
 	    continue;
-	int finished = 0;
-	int len = avcodec_decode_audio4(m_coctx, m_frame, &finished, &m_packet);
-	if (len < 0) {
-	    if (m_codec->id == AV_CODEC_ID_MP3)
-		return 0; /* probably id3sync issues at eof */
-	    else
-		throw "cannot decode audio";
 	}
-	m_pos = av_rescale_q(m_packet.pts,
-		m_format->streams[m_stream]->time_base, (AVRational){1,100});
-	if (finished) {
-	    *datap = m_frame->extended_data;
-	    return m_frame->nb_samples;
+	else {
+	    xx = avcodec_send_packet(m_coctx, &m_packet);
+	    av_packet_unref(&m_packet);
 	}
+	if (xx == AVERROR_EOF)
+	    return 0;
+	if (xx < 0)
+	    throw "cannot decode audio";
+	rc = avcodec_receive_frame(m_coctx, m_frame);
     }
-    return 0;
+    if (rc == AVERROR_EOF)
+	return 0;
+    if (rc < 0) {
+	if (m_codec->id == AV_CODEC_ID_MP3)
+	    return 0; /* probably id3sync issues at eof */
+	throw "cannot decode audio";
+    }
+    m_pos = av_rescale_q(m_frame->pts,
+	    m_format->streams[m_stream]->time_base, (AVRational){1,100});
+    *datap = m_frame->extended_data;
+    assert(m_frame->nb_samples > 0);
+    return m_frame->nb_samples;
 }
 
 void AReader::Ctx::seek(unsigned csec)
@@ -125,6 +139,7 @@ void AReader::Ctx::seek(unsigned csec)
 
 AReader::Ctx::~Ctx()
 {
+    av_frame_free(&m_frame);
     free(m_buf1);
     free(m_buf2);
 }
