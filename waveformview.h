@@ -19,6 +19,30 @@ public:
     }
 
 protected:
+    void draw_wf(const Cairo::RefPtr<Cairo::Context>& cr,
+		 size_t w, size_t h, Waveform *wf, size_t wf_x, bool fill)
+    {
+	size_t previ = wf_x ? wf_x - 1 : 0;
+	if (!fill)
+	    cr->move_to(0, h - m_wf->m_v[previ]);
+	else {
+	    cr->move_to(0, h);
+	    cr->line_to(0, h - m_wf->m_v[previ]);
+	}
+	if (wf_x + w > wf->m_n)
+	    w = wf->m_n - wf_x;
+	for (size_t i = 0; i < w; i++)
+	    cr->line_to(i + 0.5, h - m_wf->m_v[i + wf_x]);
+	size_t nexti = wf_x + w < wf->m_n ? wf_x + w : wf->m_n - 1;
+	cr->line_to(w, h - m_wf->m_v[nexti]);
+	if (!fill)
+	    cr->stroke();
+	else {
+	    cr->line_to(w, h);
+	    cr->fill();
+	}
+    }
+
     bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr)
     {
 	size_t w = get_width();
@@ -100,28 +124,18 @@ protected:
 	cr->set_source_rgba(0, 0, 0, 1);
 
 	// draw waveform
-	cr->move_to(0, h);
-	for (size_t i = 0; i < w; i++)
-	    cr->line_to(i, h - m_wf->m_v[i + wf_x]);
-	cr->line_to(w, h);
-	cr->fill();
+	draw_wf(cr, w, h, m_wf, wf_x, true);
 
 	// outline wf2
 	if (m_wf2) {
 	    cr->set_source_rgba(0, 0, 1, 0.5);
-	    cr->move_to(0, h - m_wf2->m_v[0 + wf_x]);
-	    for (size_t i = 1; i < w; i++)
-		cr->line_to(i, h - m_wf2->m_v[i + wf_x]);
-	    cr->stroke();
+	    draw_wf(cr, w, h, m_wf2, wf_x, false);
 	}
 
 	// outline wf3
 	if (m_wf3) {
 	    cr->set_source_rgba(1, 0, 0, 0.5);
-	    cr->move_to(0, h - m_wf3->m_v[0 + wf_x]);
-	    for (size_t i = 1; i < w; i++)
-		cr->line_to(i, h - m_wf3->m_v[i + wf_x]);
-	    cr->stroke();
+	    draw_wf(cr, w, h, m_wf3, wf_x, false);
 	}
 
 	// draw cursor
