@@ -91,6 +91,14 @@ protected:
 
 	cr->stroke();
 
+	// noise floor guideline, about -48 dB normalized RMS,
+	// which is also the dividing line between dB and linear scales
+	cr->move_to(0, h - 13);
+	cr->line_to(w, h - 13);
+	cr->set_source_rgba(0.8, 0.3, 0.3, 0.5);
+	cr->stroke();
+	cr->set_source_rgba(0, 0, 0, 1);
+
 	// draw waveform
 	cr->move_to(0, h);
 	for (size_t i = 0; i < w; i++)
