@@ -134,6 +134,7 @@ void AReader::Ctx::seek(unsigned csec)
 	    m_format->streams[m_stream]->time_base);
     if (av_seek_frame(m_format, m_stream, pos, 0) < 0)
 	throw "cannot seek audo stream";
+    avcodec_flush_buffers(m_coctx);
     m_pos = csec;
 }
 
