@@ -24,17 +24,17 @@ protected:
     {
 	size_t previ = wf_x ? wf_x - 1 : 0;
 	if (!fill)
-	    cr->move_to(0, h - m_wf->m_v[previ]);
+	    cr->move_to(0, h - wf->m_v[previ]);
 	else {
 	    cr->move_to(0, h);
-	    cr->line_to(0, h - m_wf->m_v[previ]);
+	    cr->line_to(0, h - wf->m_v[previ]);
 	}
 	if (wf_x + w > wf->m_n)
 	    w = wf->m_n - wf_x;
 	for (size_t i = 0; i < w; i++)
-	    cr->line_to(i + 0.5, h - m_wf->m_v[i + wf_x]);
+	    cr->line_to(i + 0.5, h - wf->m_v[i + wf_x]);
 	size_t nexti = wf_x + w < wf->m_n ? wf_x + w : wf->m_n - 1;
-	cr->line_to(w, h - m_wf->m_v[nexti]);
+	cr->line_to(w, h - wf->m_v[nexti]);
 	if (!fill)
 	    cr->stroke();
 	else {
